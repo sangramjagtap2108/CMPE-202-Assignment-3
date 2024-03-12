@@ -1,6 +1,7 @@
 #ifndef COMPUTERPLAYER_H
 #define COMPUTERPLAYER_H
 
+#include "GameChoiceService.h"
 #include "Player.h"
 #include "PatternPredictor.h"
 #include "GameChoice.h"
@@ -14,19 +15,20 @@ class ComputerPlayer : public Player {
     Strategy currentStrategy;
 
 public:
-    ComputerPlayer();
     ~ComputerPlayer() override = default;
-    
+    ComputerPlayer(GameChoiceService* gcs);
     Choice makeMove() override;
     void updatePattern(char move);
-    void readPatternFromFile(const std::string& filename);
-    void writePatternToFile(const std::string& filename);
     void setStrategy(const std::string& strategy);
 
+    // Add these declarations
+    void readPatternFromFile(const std::string& filename);
+    void writePatternToFile(const std::string& filename);
+
 private:
-    Choice winningChoiceAgainst(Choice c);
+    GameChoiceService* gameChoiceService;
     Choice randomChoice();
     Strategy stringToStrategy(const std::string& strategy);
 };
 
-#endif
+#endif // COMPUTERPLAYER_H

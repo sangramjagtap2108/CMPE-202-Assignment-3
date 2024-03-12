@@ -1,0 +1,445 @@
+----- Content of ComputerPlayer.cpp -----
+#include "ComputerPlayer.h"
+
+ComputerPlayer::ComputerPlayer(GameChoiceService* gcs) : gameChoiceService(gcs)  {
+    srand(static_cast<unsigned int>(time(nullptr)));
+    currentStrategy = SMART; 
+}
+
+Choice ComputerPlayer::randomChoice() {
+    return static_cast<Choice>(rand() % 3);
+}
+
+Choice ComputerPlayer::makeMove() {
+    if (currentStrategy == RANDOM) {
+        return randomChoice();
+    } else {
+        Choice predictedMove = predictor.predictNextMove();
+        return gameChoiceService->winningChoiceAgainst(predictedMove);
+    }
+}
+
+void ComputerPlayer::updatePattern(char move) {
+    if (currentStrategy == SMART) {
+        predictor.updateFrequencyMap(move);
+    }
+}
+
+void ComputerPlayer::readPatternFromFile(const std::string& filename) {
+    if (currentStrategy == SMART) {
+        predictor.readFrequenciesFromFile(filename);
+    }
+}
+
+void ComputerPlayer::writePatternToFile(const std::string& filename) {
+    if (currentStrategy == SMART) {
+        predictor.writeFrequenciesToFile(filename);
+    }
+}
+
+void ComputerPlayer::setStrategy(const std::string& strategy) {
+    currentStrategy = stringToStrategy(strategy);
+}
+
+ComputerPlayer::Strategy ComputerPlayer::stringToStrategy(const std::string& strategy) {
+    if (strategy == "random") {
+        return RANDOM;
+    } else {
+        return SMART;
+    }
+}
+
+
+
+----- Content of ComputerPlayer.h -----
+#ifndef COMPUTERPLAYER_H
+#define COMPUTERPLAYER_H
+
+#include "GameChoiceService.h"
+#include "Player.h"
+#include "PatternPredictor.h"
+#include "GameChoice.h"
+#include <cstdlib>
+#include <ctime>
+#include <string>
+
+class ComputerPlayer : public Player {
+    PatternPredictor predictor;
+    enum Strategy { RANDOM, SMART };
+    Strategy currentStrategy;
+
+public:
+    ~ComputerPlayer() override = default;
+    ComputerPlayer(GameChoiceService* gcs);
+    Choice makeMove() override;
+    void updatePattern(char move);
+    void setStrategy(const std::string& strategy);
+
+    // Add these declarations
+    void readPatternFromFile(const std::string& filename);
+    void writePatternToFile(const std::string& filename);
+
+private:
+    GameChoiceService* gameChoiceService;
+    Choice randomChoice();
+    Strategy stringToStrategy(const std::string& strategy);
+};
+
+#endif // COMPUTERPLAYER_H
+
+----- Content of GameChoice.cpp -----
+#include "GameChoice.h"
+
+std::string GameChoice::choiceToString(Choice c) {
+    switch (c) {
+        case ROCK: return "Rock";
+        case PAPER: return "Paper";
+        case SCISSORS: return "Scissors";
+        default: return "Unknown";
+    }
+}
+
+Choice GameChoice::charToChoice(char c) {
+    switch (c) {
+        case 'R': return ROCK;
+        case 'P': return PAPER;
+        case 'S': return SCISSORS;
+        default: return ROCK;
+    }
+}
+
+Choice GameChoice::winningChoiceAgainst(Choice c) {
+    switch (c) {
+        case ROCK: return PAPER;
+        case PAPER: return SCISSORS;
+        case SCISSORS: return ROCK;
+        default: return ROCK;
+    }
+}
+
+----- Content of GameChoice.h -----
+#ifndef GAMECHOICE_H
+#define GAMECHOICE_H
+
+#include <string>
+#include "Choice.h" // Ensure this file exists and contains the Choice enum
+
+class GameChoice {
+public:
+    static std::string choiceToString(Choice c);
+    static Choice charToChoice(char c);
+    static Choice winningChoiceAgainst(Choice c);
+};
+
+#endif // GAMECHOICE_H
+
+----- Content of GameChoiceService.h -----
+#ifndef GAMECHOICESERVICE_H
+#define GAMECHOICESERVICE_H
+
+#include "GameChoice.h"
+
+class GameChoiceService {
+public:
+    virtual ~GameChoiceService() = default;
+    virtual Choice winningChoiceAgainst(Choice c) = 0;
+};
+
+#endif // GAMECHOICESERVICE_H
+
+----- Content of GameChoiceServiceImpl.h -----
+#ifndef GAMECHOICESERVICEIMPL_H
+#define GAMECHOICESERVICEIMPL_H
+
+#include "GameChoiceService.h"
+#include "GameChoice.h"
+
+class GameChoiceServiceImpl : public GameChoiceService {
+public:
+    Choice winningChoiceAgainst(Choice c) override {
+        return GameChoice::winningChoiceAgainst(c);
+    }
+};
+
+#endif // GAMECHOICESERVICEIMPL_H
+
+----- Content of GameEngine.cpp -----
+#include "GameEngine.h"
+#include <iostream>
+#include <cctype>
+
+GameEngine::GameEngine(GameChoiceService* gcs) : gameChoiceService(gcs), computerPlayer(gcs) {
+    computerPlayer.readPatternFromFile("frequencies.txt");
+}
+
+void GameEngine::setComputerPlayerStrategy(const std::string& strategy) {
+    computerPlayer.setStrategy(strategy);
+}
+
+int GameEngine::determineWinner(Choice userChoice, Choice computerChoice) {
+    if (userChoice == computerChoice) {
+        return 0; // Draw
+    } else if ((userChoice == ROCK && computerChoice == SCISSORS) ||
+               (userChoice == PAPER && computerChoice == ROCK) ||
+               (userChoice == SCISSORS && computerChoice == PAPER)) {
+        return 1; // User wins
+    } else {
+        return -1; // Computer wins
+    }
+}
+
+void GameEngine::playGame() {
+    std::cout << "Rock, Paper, Scissors Game against the Computer!\n";
+    std::cout << "Enter R for Rock, P for Paper, S for Scissors, Q to quit:\n";
+
+    while (true) {
+        Choice userChoice = humanPlayer.makeMove();
+        if (GameChoice::choiceToString(userChoice) == "Unknown") {
+            computerPlayer.writePatternToFile("frequencies.txt");
+            break;
+        }
+
+        Choice computerChoice = computerPlayer.makeMove();
+        computerPlayer.updatePattern(GameChoice::choiceToString(userChoice)[0]);
+
+        std::cout << "You chose " << GameChoice::choiceToString(userChoice) << ".\n";
+        std::cout << "Computer chose " << GameChoice::choiceToString(computerChoice) << ".\n";
+
+        int winner = determineWinner(userChoice, computerChoice);
+        if (winner == 0) {
+            std::cout << "It's a draw!\n";
+        } else if (winner == 1) {
+            std::cout << "You win!\n";
+        } else {
+            std::cout << "Computer wins!\n";
+        }
+    }
+}
+
+----- Content of GameEngine.h -----
+#ifndef GAMEENGINE_H
+#define GAMEENGINE_H
+
+#include "Player.h"
+#include "HumanPlayer.h"
+#include "ComputerPlayer.h"
+#include "GameChoiceServiceImpl.h"
+
+
+class GameEngine {
+    
+private:
+    GameChoiceService* gameChoiceService; 
+    ComputerPlayer computerPlayer; 
+    HumanPlayer humanPlayer;
+
+public:
+    GameEngine(GameChoiceService* gcs);
+    void playGame();
+    void setComputerPlayerStrategy(const std::string& strategy);
+    int determineWinner(Choice userChoice, Choice computerChoice);
+};
+
+#endif // GAMEENGINE_H
+
+----- Content of HumanPlayer.cpp -----
+#include "HumanPlayer.h"
+#include "GameChoice.h"
+#include <iostream>
+#include <cctype>
+
+Choice HumanPlayer::makeMove() {
+    char userMove;
+    std::cout << "> ";
+    std::cin >> userMove;
+    return GameChoice::charToChoice(toupper(userMove));
+}
+
+----- Content of HumanPlayer.h -----
+#ifndef HUMANPLAYER_H
+#define HUMANPLAYER_H
+
+#include "Player.h"
+
+class HumanPlayer : public Player {
+public:
+    ~HumanPlayer() override = default;
+    Choice makeMove() override;
+};
+
+#endif // HUMANPLAYER_H
+
+----- Content of PatternPredictor.cpp -----
+#include "PatternPredictor.h"
+#include "GameChoice.h"
+#include <fstream>
+#include <sstream>
+#include <cstdlib> 
+#include <ctime>   
+#include <iostream> 
+
+PatternPredictor::PatternPredictor() {
+    srand(static_cast<unsigned int>(time(nullptr)));
+}
+
+Choice PatternPredictor::predictNextMove() {
+    if (sequence.length() < N - 1) {
+        return static_cast<Choice>(rand() % 3);
+    }
+
+    std::string recentPattern = sequence.substr(sequence.length() - (N - 1));
+    if (frequencyMap.find(recentPattern) == frequencyMap.end()) {
+        return static_cast<Choice>(rand() % 3);
+    }
+
+    char mostLikelyMove = 'R'; 
+    int maxFrequency = -1;
+    for (auto &moveFreq : frequencyMap[recentPattern]) {
+        if (moveFreq.second > maxFrequency) {
+            maxFrequency = moveFreq.second;
+            mostLikelyMove = moveFreq.first;
+        }
+    }
+
+    return GameChoice::charToChoice(mostLikelyMove);
+}
+
+void PatternPredictor::updateFrequencyMap(char move) {
+    if (sequence.length() == N - 1) {
+        frequencyMap[sequence][move]++;
+    }
+    sequence += move;
+    if (sequence.length() > N - 1) {
+        sequence.erase(sequence.begin());
+    }
+}
+
+void PatternPredictor::readFrequenciesFromFile(const std::string &filename) {
+    std::ifstream file(filename);
+    if (file.is_open()) {
+        std::string line;
+        while (getline(file, line)) {
+            std::istringstream iss(line);
+            std::string pattern;
+            getline(iss, pattern, ':');
+            pattern.erase(pattern.end() - 1);
+
+            std::unordered_map<char, int> moves;
+            std::string moveFreqPair;
+            while (getline(iss, moveFreqPair, ',')) {
+                if(moveFreqPair.empty()) continue; 
+                std::istringstream ss(moveFreqPair);
+                char move;
+                int freq;
+                ss >> move >> freq;
+                moves[move] = freq;
+            }
+            frequencyMap[pattern] = moves;
+        }
+        file.close();
+    } else {
+        std::cerr << "Unable to open file: " << filename << std::endl;
+    }
+}
+
+void PatternPredictor::writeFrequenciesToFile(const std::string &filename) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        for (const auto &entry : frequencyMap) {
+            file << entry.first << ": ";
+            for (const auto &moveFreq : entry.second) {
+                file << moveFreq.first << " " << moveFreq.second << ",";
+            }
+            file << std::endl;
+        }
+        file.close();
+    } else {
+        std::cerr << "Unable to open file: " << filename << std::endl;
+    }
+}
+
+----- Content of PatternPredictor.h -----
+#ifndef PATTERNPREDICTOR_H
+#define PATTERNPREDICTOR_H
+
+#include <unordered_map>
+#include <string>
+#include "GameChoice.h"
+
+class PatternPredictor {
+    std::unordered_map<std::string, std::unordered_map<char, int>> frequencyMap;
+    std::string sequence;
+    const int N = 5;
+
+public:
+    PatternPredictor();
+    Choice predictNextMove();
+    void updateFrequencyMap(char move);
+    void readFrequenciesFromFile(const std::string &filename);
+    void writeFrequenciesToFile(const std::string &filename);
+};
+
+#endif // PATTERNPREDICTOR_H
+
+----- Content of Player.h -----
+#ifndef PLAYER_H
+#define PLAYER_H
+
+#include "GameChoice.h"
+
+class Player {
+public:
+    virtual ~Player() = default;
+    virtual Choice makeMove() = 0;
+};
+
+#endif // PLAYER_H
+
+----- Content of RockPaperScissorsGame.cpp -----
+#include "RockPaperScissorsGame.h"
+
+void RockPaperScissorsGame::start() {
+    engine->playGame();
+}
+
+void RockPaperScissorsGame::setStrategy(const std::string& strategy) {
+    engine->setComputerPlayerStrategy(strategy);
+}
+
+----- Content of RockPaperScissorsGame.h -----
+#ifndef ROCKPAPERSCISSORSGAME_H
+#define ROCKPAPERSCISSORSGAME_H
+
+#include "GameEngine.h"
+
+class RockPaperScissorsGame {
+    GameEngine* engine;
+
+public:
+    RockPaperScissorsGame(GameEngine* eng) : engine(eng) {}
+    void start();
+    void setStrategy(const std::string& strategy);
+};
+
+#endif // ROCKPAPERSCISSORSGAME_H
+
+----- Content of main.cpp -----
+#include <iostream>
+#include "RockPaperScissorsGame.h"
+#include "GameChoiceServiceImpl.h"
+
+int main() {
+    GameChoiceServiceImpl gameChoiceService; // Instantiate your service
+    GameEngine engine(&gameChoiceService); // Inject service into engine
+    RockPaperScissorsGame game(&engine); // Adjust RockPaperScissorsGame constructor accordingly
+
+    std::string strategy;
+    std::cout << "Choose strategy (random/smart): ";
+    std::cin >> strategy;
+
+    game.setStrategy(strategy);
+    game.start();
+
+    return 0;
+}
+

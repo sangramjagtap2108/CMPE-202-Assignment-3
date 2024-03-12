@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cctype>
 
-GameEngine::GameEngine() {
+GameEngine::GameEngine(GameChoiceService* gcs) : gameChoiceService(gcs), computerPlayer(gcs) {
     computerPlayer.readPatternFromFile("frequencies.txt");
 }
 

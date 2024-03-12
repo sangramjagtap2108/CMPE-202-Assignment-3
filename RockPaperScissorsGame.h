@@ -4,9 +4,10 @@
 #include "GameEngine.h"
 
 class RockPaperScissorsGame {
-    GameEngine engine;
+    GameEngine* engine;
 
 public:
+    RockPaperScissorsGame(GameEngine* eng) : engine(eng) {}
     void start();
     void setStrategy(const std::string& strategy);
 };

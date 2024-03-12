@@ -1,9 +1,9 @@
 #include "RockPaperScissorsGame.h"
 
 void RockPaperScissorsGame::start() {
-    engine.playGame();
+    engine->playGame();
 }
 
 void RockPaperScissorsGame::setStrategy(const std::string& strategy) {
-    engine.setComputerPlayerStrategy(strategy);
+    engine->setComputerPlayerStrategy(strategy);
 }

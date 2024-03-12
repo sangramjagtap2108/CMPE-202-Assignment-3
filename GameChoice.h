@@ -2,12 +2,7 @@
 #define GAMECHOICE_H
 
 #include <string>
-
-enum Choice {
-    ROCK,
-    PAPER,
-    SCISSORS
-};
+#include "Choice.h" // Ensure this file exists and contains the Choice enum
 
 class GameChoice {
 public:

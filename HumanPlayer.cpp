@@ -1,5 +1,7 @@
 #include "HumanPlayer.h"
+#include "GameChoice.h"
 #include <iostream>
+#include <cctype>
 
 Choice HumanPlayer::makeMove() {
     char userMove;

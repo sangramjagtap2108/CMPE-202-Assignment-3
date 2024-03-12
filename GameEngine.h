@@ -4,13 +4,18 @@
 #include "Player.h"
 #include "HumanPlayer.h"
 #include "ComputerPlayer.h"
+#include "GameChoiceServiceImpl.h"
+
 
 class GameEngine {
+    
+private:
+    GameChoiceService* gameChoiceService; 
+    ComputerPlayer computerPlayer; 
     HumanPlayer humanPlayer;
-    ComputerPlayer computerPlayer;
 
 public:
-    GameEngine();
+    GameEngine(GameChoiceService* gcs);
     void playGame();
     void setComputerPlayerStrategy(const std::string& strategy);
     int determineWinner(Choice userChoice, Choice computerChoice);

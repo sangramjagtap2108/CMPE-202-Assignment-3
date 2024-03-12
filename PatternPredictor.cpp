@@ -1,4 +1,5 @@
 #include "PatternPredictor.h"
+#include "GameChoice.h"
 #include <fstream>
 #include <sstream>
 #include <cstdlib> 

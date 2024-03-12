@@ -1,17 +1,8 @@
 #include "ComputerPlayer.h"
 
-ComputerPlayer::ComputerPlayer() {
+ComputerPlayer::ComputerPlayer(GameChoiceService* gcs) : gameChoiceService(gcs)  {
     srand(static_cast<unsigned int>(time(nullptr)));
     currentStrategy = SMART; 
-}
-
-Choice ComputerPlayer::winningChoiceAgainst(Choice c) {
-    switch (c) {
-        case ROCK: return PAPER;
-        case PAPER: return SCISSORS;
-        case SCISSORS: return ROCK;
-        default: return ROCK;
-    }
 }
 
 Choice ComputerPlayer::randomChoice() {
@@ -23,7 +14,7 @@ Choice ComputerPlayer::makeMove() {
         return randomChoice();
     } else {
         Choice predictedMove = predictor.predictNextMove();
-        return winningChoiceAgainst(predictedMove);
+        return gameChoiceService->winningChoiceAgainst(predictedMove);
     }
 }
 

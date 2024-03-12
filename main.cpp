@@ -1,9 +1,11 @@
 #include <iostream>
-#include <string>
 #include "RockPaperScissorsGame.h"
+#include "GameChoiceServiceImpl.h"
 
 int main() {
-    RockPaperScissorsGame game;
+    GameChoiceServiceImpl gameChoiceService; // Instantiate your service
+    GameEngine engine(&gameChoiceService); // Inject service into engine
+    RockPaperScissorsGame game(&engine); // Adjust RockPaperScissorsGame constructor accordingly
 
     std::string strategy;
     std::cout << "Choose strategy (random/smart): ";
